@@ -16,12 +16,21 @@ namespace
         return ( lhs - rhs ).absSquared() < eps;
     }
 
-    
-}
-    
 
+}
+
+
+//
+//                          '||  '||''|.                    ||
+//   ....  .... ...  ....    ||   ||   ||    ....  ......  ...    ....  ... ..
+// .|...||  '|.  |  '' .||   ||   ||'''|.  .|...|| '  .|'   ||  .|...||  ||' ''
+// ||        '|.|   .|' ||   ||   ||    || ||       .|'     ||  ||       ||
+//  '|...'    '|    '|..'|' .||. .||...|'   '|...' ||....| .||.  '|...' .||.
+//
+//
 Curve evalBezier( const vector< Vector3f >& P, unsigned steps )
 {
+    vector< CurvePoint > bezierCurvePoints;
     // Check
     if( P.size() < 4 || P.size() % 3 != 1 )
     {
@@ -51,16 +60,29 @@ Curve evalBezier( const vector< Vector3f >& P, unsigned steps )
     cerr << "\t>>> Control points (type vector< Vector3f >): "<< endl;
     for( unsigned i = 0; i < P.size(); ++i )
     {
-        cerr << "\t>>> " << P[i] << endl;
+        cerr << "\t\t>>> " << "x=" << P[i].x()
+                         << ", y=" << P[i].y()
+                         << ", z=" << P[i].z() << endl;
     }
 
     cerr << "\t>>> Steps (type steps): " << steps << endl;
-    cerr << "\t>>> Returning empty curve." << endl;
+    cerr << "\t>>> Returning populated curve:" << endl;
 
     // Right now this will just return this empty curve.
-    return Curve();
+    return bezierCurvePoints;
+
+    // drawCurve( curve, 0 )
 }
 
+
+//
+//                          '||  '||''|.                   '||   ||
+//   ....  .... ...  ....    ||   ||   ||   ....  ... ...   ||  ...  .. ...     ....
+// .|...||  '|.  |  '' .||   ||   ||'''|.  ||. '   ||'  ||  ||   ||   ||  ||  .|...||
+// ||        '|.|   .|' ||   ||   ||    || . '|..  ||    |  ||   ||   ||  ||  ||
+//  '|...'    '|    '|..'|' .||. .||...|'  |'..|'  ||...'  .||. .||. .||. ||.  '|...'
+//                                                 ||
+//                                                ''''
 Curve evalBspline( const vector< Vector3f >& P, unsigned steps )
 {
     // Check
@@ -90,11 +112,19 @@ Curve evalBspline( const vector< Vector3f >& P, unsigned steps )
     return Curve();
 }
 
+
+
+//                          '||    ..|'''.|  ||                  '||
+//   ....  .... ...  ....    ||  .|'     '  ...  ... ..    ....   ||    ....
+// .|...||  '|.  |  '' .||   ||  ||          ||   ||' '' .|   ''  ||  .|...||
+// ||        '|.|   .|' ||   ||  '|.      .  ||   ||     ||       ||  ||
+//  '|...'    '|    '|..'|' .||.  ''|....'  .||. .||.     '|...' .||.  '|...'
+//
 Curve evalCircle( float radius, unsigned steps )
 {
     // This is a sample function on how to properly initialize a Curve
     // (which is a vector< CurvePoint >).
-    
+
     // Preallocate a curve with steps+1 CurvePoints
     Curve R( steps+1 );
 
@@ -107,10 +137,10 @@ Curve evalCircle( float radius, unsigned steps )
         // Initialize position
         // We're pivoting counterclockwise around the y-axis
         R[i].V = radius * Vector3f( cos(t), sin(t), 0 );
-        
+
         // Tangent vector is first derivative
         R[i].T = Vector3f( -sin(t), cos(t), 0 );
-        
+
         // Normal vector is second derivative
         R[i].N = Vector3f( -cos(t), -sin(t), 0 );
 
@@ -121,16 +151,23 @@ Curve evalCircle( float radius, unsigned steps )
     return R;
 }
 
+
+ //     '||                                ..|'''.|
+ //   .. ||  ... ..   ....   ... ... ... .|'     '  ... ...  ... ..  .... ...   ....
+ // .'  '||   ||' '' '' .||   ||  ||  |  ||          ||  ||   ||' ''  '|.  |  .|...||
+ // |.   ||   ||     .|' ||    ||| |||   '|.      .  ||  ||   ||       '|.|   ||
+ // '|..'||. .||.    '|..'|'    |   |     ''|....'   '|..'|. .||.       '|     '|...'
+ //
 void drawCurve( const Curve& curve, float framesize )
 {
     // Save current state of OpenGL
     glPushAttrib( GL_ALL_ATTRIB_BITS );
 
     // Setup for line drawing
-    glDisable( GL_LIGHTING ); 
+    glDisable( GL_LIGHTING );
     glColor4f( 1, 1, 1, 1 );
     glLineWidth( 1 );
-    
+
     // Draw curve
     glBegin( GL_LINE_STRIP );
     for( unsigned i = 0; i < curve.size(); ++i )
@@ -164,8 +201,7 @@ void drawCurve( const Curve& curve, float framesize )
             glPopMatrix();
         }
     }
-    
+
     // Pop state
     glPopAttrib();
 }
-

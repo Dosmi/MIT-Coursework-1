@@ -38,7 +38,7 @@ namespace
 
     // This detemines how big to draw the normals
     const float gLineLen = 0.1f;
-    
+
     // These are arrays for display lists for each drawing mode.  The
     // convention is that drawmode 0 is "blank", and other drawmodes
     // just call the appropriate display lists.
@@ -46,7 +46,7 @@ namespace
     GLuint gSurfaceLists[3];
     GLuint gAxisList;
     GLuint gPointList;
-   
+
     // These STL Vectors store the control points, curves, and
     // surfaces that will end up being drawn.  In addition, parallel
     // STL vectors store the names for the curves and surfaces (as
@@ -69,43 +69,64 @@ namespace
     void loadObjects(int argc, char *argv[]);
     void makeDisplayLists();
 
+    /******************************************************************************************************
+    '||                       '||                                   '||  '||''''|
+     ||  ..    ....  .... ...  || ...    ...    ....   ... ..     .. ||   ||  .   ... ...  .. ...     ....
+     || .'   .|...||  '|.  |   ||'  || .|  '|. '' .||   ||' ''  .'  '||   ||''|    ||  ||   ||  ||  .|   ''
+     ||'|.   ||        '|.|    ||    | ||   || .|' ||   ||      |.   ||   ||       ||  ||   ||  ||  ||
+    .||. ||.  '|...'    '|     '|...'   '|..|' '|..'|' .||.     '|..'||. .||.      '|..'|. .||. ||.  '|...'
+                     .. |
+                      ''
+    _______________________________________________________________________________________________________
     // This function is called whenever a "Normal" key press is
     // received.
+    *******************************************************************************************************/
     void keyboardFunc( unsigned char key, int x, int y )
     {
         switch ( key )
         {
-        case 27: // Escape key
-            exit(0);
-            break;
-        case ' ':
-        {
-            Matrix4f eye = Matrix4f::identity();
-            camera.SetRotation(eye);
-            camera.SetCenter(Vector3f(0,0,0));
-            break;
-        }
-        case 'c':
-        case 'C':
-            gCurveMode = (gCurveMode+1)%3;
-            break;
-        case 's':
-        case 'S':
-            gSurfaceMode = (gSurfaceMode+1)%3;
-            break;
-        case 'p':
-        case 'P':
-            gPointMode = (gPointMode+1)%2;
-            break;            
-        default:
-            cout << "Unhandled key press " << key << "." << endl;        
+          case 27: // Escape key
+              exit(0); // Exits the application
+              break;
+          case ' ':
+          {   // 'Space' Key resets the camera (to point to center)
+              Matrix4f eye = Matrix4f::identity();
+              camera.SetRotation(eye);
+              camera.SetCenter(Vector3f(0,0,0));
+              break;
+          }
+          case 'c':
+          case 'C':
+              gCurveMode = (gCurveMode+1)%3;
+              break;
+          case 's':
+          case 'S':
+              gSurfaceMode = (gSurfaceMode+1)%3;
+              break;
+          case 'p':
+          case 'P':
+              gPointMode = (gPointMode+1)%2;
+              break;
+          default:
+              cout << "Unhandled key press " << key << "." << endl;
         }
 
         glutPostRedisplay();
     }
 
+    /****************************************************************************************
+
+                                     ||          '||  '||''''|
+     ....  ... ...    ....    ....  ...   ....    ||   ||  .   ... ...  .. ...     ....
+    ||. '   ||'  || .|...|| .|   ''  ||  '' .||   ||   ||''|    ||  ||   ||  ||  .|   ''
+    . '|..  ||    | ||      ||       ||  .|' ||   ||   ||       ||  ||   ||  ||  ||
+    |'..|'  ||...'   '|...'  '|...' .||. '|..'|' .||. .||.      '|..'|. .||. ||.  '|...'
+            ||
+            ''''
+    _________________________________________________________________________________________
     // This function is called whenever a "Special" key press is
     // received.  Right now, it does nothing.
+    ****************************************************************************************/
     void specialFunc( int key, int x, int y )
     {
 		/*
@@ -118,14 +139,22 @@ namespace
 
         //glutPostRedisplay();
     }
+    /******************************************************************************
 
+                                                '||''''|
+     .. .. ..     ...   ... ...   ....    ....   ||  .   ... ...  .. ...     ....
+      || || ||  .|  '|.  ||  ||  ||. '  .|...||  ||''|    ||  ||   ||  ||  .|   ''
+      || || ||  ||   ||  ||  ||  . '|.. ||       ||       ||  ||   ||  ||  ||
+     .|| || ||.  '|..|'  '|..'|. |'..|'  '|...' .||.      '|..'|. .||. ||.  '|...'
+    _______________________________________________________________________________
     //  Called when mouse button is pressed.
+    ******************************************************************************/
     void mouseFunc(int button, int state, int x, int y)
     {
         if (state == GLUT_DOWN)
         {
             gMousePressed = true;
-            
+
             switch (button)
             {
             case GLUT_LEFT_BUTTON:
@@ -138,7 +167,7 @@ namespace
                 camera.MouseClick(Camera::RIGHT, x,y);
             default:
                 break;
-            }                       
+            }
         }
         else
         {
@@ -148,16 +177,35 @@ namespace
         glutPostRedisplay();
     }
 
+    /********************************************************************************
+                          .    ||                   '||''''|
+     .. .. ..     ...   .||.  ...    ...   .. ...    ||  .   ... ...  .. ...     ....
+      || || ||  .|  '|.  ||    ||  .|  '|.  ||  ||   ||''|    ||  ||   ||  ||  .|   ''
+      || || ||  ||   ||  ||    ||  ||   ||  ||  ||   ||       ||  ||   ||  ||  ||
+     .|| || ||.  '|..|'  '|.' .||.  '|..|' .||. ||. .||.      '|..'|. .||. ||.  '|...'
+
     // Called when mouse is moved while button pressed.
+    **********************************************************************************/
     void motionFunc(int x, int y)
     {
-        camera.MouseDrag(x,y);        
-    
+        camera.MouseDrag(x,y);
+
         glutPostRedisplay();
     }
 
+    /*********************************************************************************************
+
+                           '||                               '||''''|
+    ... ..    ....   ....   || ..    ....   ... ...    ....   ||  .   ... ...  .. ...     ....
+     ||' '' .|...|| ||. '   ||' ||  '' .||   ||'  || .|...||  ||''|    ||  ||   ||  ||  .|   ''
+     ||     ||      . '|..  ||  ||  .|' ||   ||    | ||       ||       ||  ||   ||  ||  ||
+    .||.     '|...' |'..|' .||. ||. '|..'|'  ||...'   '|...' .||.      '|..'|. .||. ||.  '|...'
+                                             ||
+                                            ''''
+    _______________________________________________________________________________________________
     // Called when the window is resized
     // w, h - width and height of the window in pixels.
+    ***********************************************************************************************/
     void reshapeFunc(int w, int h)
     {
         camera.SetDimensions(w,h);
@@ -173,14 +221,23 @@ namespace
         camera.ApplyPerspective();
     }
 
+    /***************************************************************************************
+
+        '||                               .|'''.|
+      .. ||  ... ..   ....   ... ... ...  ||..  '    ....    ....  .. ...     ....
+    .'  '||   ||' '' '' .||   ||  ||  |    ''|||.  .|   '' .|...||  ||  ||  .|...||
+    |.   ||   ||     .|' ||    ||| |||   .     '|| ||      ||       ||  ||  ||
+    '|..'||. .||.    '|..'|'    |   |    |'....|'   '|...'  '|...' .||. ||.  '|...'
+    _________________________________________________________________________________________
     // This function is responsible for displaying the object.
+    ****************************************************************************************/
     void drawScene(void)
     {
         // Clear the rendering window
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        glMatrixMode( GL_MODELVIEW );  
-        glLoadIdentity();              
+        glMatrixMode( GL_MODELVIEW );
+        glLoadIdentity();
 
         // Light color (RGBA)
         GLfloat Lt0diff[] = {1.0,1.0,1.0,1.0};
@@ -209,14 +266,24 @@ namespace
 
         if (gPointMode)
             glCallList(gPointList);
-                 
+
         // Dump the image to the screen.
         glutSwapBuffers();
 
 
     }
 
+    /***************************************************************************************************
+
+      ||            ||    .   '||''|.                         '||                   ||
+     ...  .. ...   ...  .||.   ||   ||    ....  .. ...      .. ||    ....  ... ..  ...  .. ...     ... .
+      ||   ||  ||   ||   ||    ||''|'   .|...||  ||  ||   .'  '||  .|...||  ||' ''  ||   ||  ||   || ||
+      ||   ||  ||   ||   ||    ||   |.  ||       ||  ||   |.   ||  ||       ||      ||   ||  ||    |''
+     .||. .||. ||. .||.  '|.' .||.  '|'  '|...' .||. ||.  '|..'||.  '|...' .||.    .||. .||. ||.  '||||.
+                                                                                                 .|....'
+     ____________________________________________________________________________________________________
     // Initialize OpenGL's rendering modes
+    ****************************************************************************************************/
     void initRendering()
     {
         glEnable(GL_DEPTH_TEST);   // Depth testing must be turned on
@@ -233,11 +300,11 @@ namespace
           glEnable(GL_BLEND);
           glEnable(GL_POINT_SMOOTH);
           glEnable(GL_LINE_SMOOTH);
-          glHint(GL_POINT_SMOOTH_HINT, GL_NICEST);    
+          glHint(GL_POINT_SMOOTH_HINT, GL_NICEST);
           glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
           glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         */
-        
+
         // Clear to black
         glClearColor(0,0,0,1);
 
@@ -251,9 +318,20 @@ namespace
         glMaterialfv(GL_FRONT_AND_BACK, GL_SHININESS, shininess);
     }
 
-    // Load in objects from standard input into the global variables: 
+    /*************************************************************************************
+
+    '||                       '||   ..|''||   '||         ||                   .
+     ||    ...    ....      .. ||  .|'    ||   || ...    ...   ....    ....  .||.   ....
+     ||  .|  '|. '' .||   .'  '||  ||      ||  ||'  ||    || .|...|| .|   ''  ||   ||. '
+     ||  ||   || .|' ||   |.   ||  '|.     ||  ||    |    || ||      ||       ||   . '|..
+    .||.  '|..|' '|..'|'  '|..'||.  ''|...|'   '|...'     ||  '|...'  '|...'  '|.' |'..|'
+                                                       .. |'
+                                                        ''
+    ______________________________________________________________________________________
+    // Load in objects from standard input into the global variables:
     // gCtrlPoints, gCurves, gCurveNames, gSurfaces, gSurfaceNames.  If
     // loading fails, this will exit the program.
+    **************************************************************************************/
     void loadObjects(int argc, char *argv[])
     {
         if (argc < 2)
@@ -269,16 +347,16 @@ namespace
             exit(0);
         }
 
-        
+
         cerr << endl << "*** loading and constructing curves and surfaces ***" << endl;
-        
+
         if (!parseFile(in, gCtrlPoints,
                        gCurves, gCurveNames,
                        gSurfaces, gSurfaceNames))
         {
             cerr << "\aerror in file format\a" << endl;
             in.close();
-            exit(-1);              
+            exit(-1);
         }
 
         in.close();
@@ -287,7 +365,7 @@ namespace
         if (argc > 2)
         {
             cerr << endl << "*** writing obj files ***" << endl;
-            
+
             string prefix(argv[2]);
 
             for (unsigned i=0; i<gSurfaceNames.size(); i++)
@@ -314,14 +392,22 @@ namespace
                     }
                 }
             }
-            
+
         }
 
         cerr << endl << "*** done ***" << endl;
 
 
     }
-
+    /*****************************************************************************************************************************
+                         '||              '||''|.    ||                  '||                   '||'       ||           .
+      .. .. ..    ....    ||  ..    ....   ||   ||  ...   ....  ... ...   ||   ....   .... ...  ||       ...   ....  .||.   ....
+       || || ||  '' .||   || .'   .|...||  ||    ||  ||  ||. '   ||'  ||  ||  '' .||   '|.  |   ||        ||  ||. '   ||   ||. '
+       || || ||  .|' ||   ||'|.   ||       ||    ||  ||  . '|..  ||    |  ||  .|' ||    '|.|    ||        ||  . '|..  ||   . '|..
+      .|| || ||. '|..'|' .||. ||.  '|...' .||...|'  .||. |'..|'  ||...'  .||. '|..'|'    '|    .||.....| .||. |'..|'  '|.' |'..|'
+                                                                 ||                   .. |
+                                                                ''''                   ''
+    ******************************************************************************************************************************/
     void makeDisplayLists()
     {
         gCurveLists[1] = glGenLists(1);
@@ -332,21 +418,22 @@ namespace
         gPointList = glGenLists(1);
 
         // Compile the display lists
-        
+        cerr << " ... drawing the curves ..." << endl;
+
         glNewList(gCurveLists[1], GL_COMPILE);
         {
             for (unsigned i=0; i<gCurves.size(); i++)
                 drawCurve(gCurves[i], 0.0);
         }
         glEndList();
-                
+
         glNewList(gCurveLists[2], GL_COMPILE);
         {
             for (unsigned i=0; i<gCurves.size(); i++)
                 drawCurve(gCurves[i], gLineLen);
         }
         glEndList();
-        
+
         glNewList(gSurfaceLists[1], GL_COMPILE);
         {
             for (unsigned i=0; i<gSurfaces.size(); i++)
@@ -383,10 +470,10 @@ namespace
             glVertex3d(0,0,0); glVertex3d(-1,0,0);
             glVertex3d(0,0,0); glVertex3d(0,-1,0);
             glVertex3d(0,0,0); glVertex3d(0,0,-1);
-        
+
             glEnd();
             glPopMatrix();
-            
+
             glPopAttrib();
         }
         glEndList();
@@ -397,7 +484,7 @@ namespace
             glPushAttrib(GL_ALL_ATTRIB_BITS);
 
             // Setup for point drawing
-            glDisable(GL_LIGHTING);    
+            glDisable(GL_LIGHTING);
             glColor4f(1,1,0.0,1);
             glPointSize(4);
             glLineWidth(1);
@@ -414,36 +501,50 @@ namespace
                     glVertex(gCtrlPoints[i][j]);
                 glEnd();
             }
-            
+
             glPopAttrib();
         }
         glEndList();
 
     }
-    
+
 }
 
+/**************************************************************
+
+
+                    ||
+.. .. ..    ....   ...  .. ...
+ || || ||  '' .||   ||   ||  ||
+ || || ||  .|' ||   ||   ||  ||
+.|| || ||. '|..'|' .||. .||. ||.
+
+
+
+______________________________________________________________
 // Main routine.
 // Set up OpenGL, define the callbacks and start the main loop
+**************************************************************/
 int main( int argc, char* argv[] )
 {
     // Load in from standard input
+    // (parses the input, calls 'evaluate' Curves ... )
     loadObjects(argc, argv);
 
     glutInit(&argc,argv);
 
-    // We're going to animate it, so double buffer 
+    // We're going to animate it, so double buffer
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH );
 
     // Initial parameters for window position and size
     glutInitWindowPosition( 60, 60 );
     glutInitWindowSize( 600, 600 );
-    
+
     camera.SetDimensions(600, 600);
 
     camera.SetDistance(10);
     camera.SetCenter(Vector3f(0,0,0));
-    
+
     glutCreateWindow("Assignment 1");
 
     // Initialize OpenGL parameters.
@@ -467,7 +568,7 @@ int main( int argc, char* argv[] )
     //  glutTimerFunc(20, timerFunc, 0);
 
     makeDisplayLists();
-        
+
     // Start the main loop.  glutMainLoop never returns.
     glutMainLoop();
 
