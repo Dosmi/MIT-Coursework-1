@@ -4,6 +4,10 @@
 #include <windows.h>
 #endif
 #include <GL/gl.h>
+
+// Additional includes:
+#include<cmath> // for pow()
+
 using namespace std;
 
 namespace
@@ -30,7 +34,8 @@ namespace
 //
 Curve evalBezier( const vector< Vector3f >& P, unsigned steps )
 {
-    vector< CurvePoint > bezierCurvePoints;
+    vector< CurvePoint > BezierCurve;
+    Matrix4f ControlPolygon;
     // Check
     if( P.size() < 4 || P.size() % 3 != 1 )
     {
@@ -58,18 +63,59 @@ Curve evalBezier( const vector< Vector3f >& P, unsigned steps )
     cerr << "\t>>> evalBezier has been called with the following input:" << endl;
 
     cerr << "\t>>> Control points (type vector< Vector3f >): "<< endl;
+    ControlPolygon = Matrix4f(0);
     for( unsigned i = 0; i < P.size(); ++i )
     {
         cerr << "\t\t>>> " << "x=" << P[i].x()
                          << ", y=" << P[i].y()
                          << ", z=" << P[i].z() << endl;
+        Vector4f col = Vector4f(P[i], 0);
+        ControlPolygon.setCol(i, col);
     }
 
+
+
     cerr << "\t>>> Steps (type steps): " << steps << endl;
+
+    cerr << " ... populating the curve ... " << endl;
+
+    cerr << "\t>>> Control Polygon: " << endl;
+    ControlPolygon.print();
+
+    cerr << "\t>>> Control Polygon x Bernstein Basis: " << endl;
+    Matrix4f BernsteinBasis = Matrix4f
+                              (
+                                1, -3,  3, -1,
+                                0,  3, -6,  3,
+                                0,  0,  3, -3,
+                                0,  0,  0,  1
+                              );
+
+    Matrix4f GB = ControlPolygon * BernsteinBasis;
+    GB.print();
+
+    cerr << "\t>>> Curve " << endl;
+
+    for ( double i = 0.0; i <= 1.0; i = i + 1.0/steps )
+    {
+      cerr << i << endl;
+      Vector4f MonomialBasis = Vector4f(1, i, pow(i,2), pow(i,3));
+      CurvePoint point;
+      Vector4f GBT = GB * MonomialBasis;
+
+      // convertion to Vector3f, so we can write it to 'point.V':
+      Vector3f GBT3f = Vector3f ( GBT.x(), GBT.y(), GBT.z() );
+      point.V = GBT3f;
+
+      // appending (adding) to the total point vector (list)
+      BezierCurve.push_back(point);
+
+    }
+
     cerr << "\t>>> Returning populated curve:" << endl;
 
     // Right now this will just return this empty curve.
-    return bezierCurvePoints;
+    return BezierCurve;
 
     // drawCurve( curve, 0 )
 }
