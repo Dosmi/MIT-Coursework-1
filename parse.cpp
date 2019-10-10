@@ -114,9 +114,13 @@ bool parseFile(
             cerr << " reading bsp2 " << "[" << objName << "]" << endl;
             in >> steps;
             curves.push_back( evalBspline(cpsToAdd = readCps(in, 2), steps) );
+            cerr << "+ RECEIVED B-Spline Back +" << endl;
             curveNames.push_back(objName);
+            cerr << "+ names +" << endl;
             dims.push_back(2);
+            cerr << "+ DIMS +" << endl;
             if (named) curveIndex[objName] = dims.size()-1;
+            cerr << "+ IM +" << endl;
         }
         else if (objType == "bez3")
         {
@@ -147,7 +151,17 @@ bool parseFile(
             in >> profName;
 
             cerr << "  profile [" << profName << "]" << endl;
+            cerr << curveIndex.size() << endl;
+            for(auto elem : curveIndex)
+            {
+               cerr << "1" << "\n";
+               cerr << elem.first << "\n";
+            }
 
+            for (auto const& pair: curveIndex)
+            {
+              cerr << "{" << pair.first << ": " << pair.second << "}\n";
+            }
             map<string,unsigned>::const_iterator it = curveIndex.find(profName);
 
             // Failure checks
@@ -159,6 +173,7 @@ bool parseFile(
             }
 
             // Make the surface
+            cerr << ">>> Making the surface:" << endl;
             surfaces.push_back( makeSurfRev( curves[it->second], steps ) );
             surfaceNames.push_back(objName);
             if (named) surfaceIndex[objName] = surfaceNames.size()-1;
@@ -216,8 +231,23 @@ bool parseFile(
             cerr << "failed: type " << objType << " unrecognized." << endl;
             return false;
         }
+        //cerr << cpsToAdd << endl;
+        // const vector<Vector3f> &cpsToAdd_const = cpsToAdd;
+        // cerr << cpsToAdd_const.print();
+
+        // const_cast<const vector<Vector3f>&>(cpsToAdd).print();
+        // std::as_const(cpsToAdd).print();
+
+        for (Vector3f i : cpsToAdd)
+        {
+          i.print();
+        }
+
+
+        cerr << " + ctrl points +" << endl;
 
         ctrlPoints.push_back(cpsToAdd);
+        cerr << " + success ctrl points +" << endl;
     }
 
     return true;

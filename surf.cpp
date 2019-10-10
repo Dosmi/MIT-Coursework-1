@@ -4,25 +4,45 @@ using namespace std;
 
 namespace
 {
-    
+
     // We're only implenting swept surfaces where the profile curve is
     // flat on the xy-plane.  This is a check function.
     static bool checkFlat(const Curve &profile)
     {
+        cerr << "profile size: " << profile.size() << endl;
         for (unsigned i=0; i<profile.size(); i++)
-            if (profile[i].V[2] != 0.0 ||
-                profile[i].T[2] != 0.0 ||
-                profile[i].N[2] != 0.0)
+        { // if profile is empty, just returns true (why it works without any normals etc ...
+          cerr << "V:" << profile[i].V[2] << " T:" << profile[i].T[2] << " N:" << profile[i].N[2] << endl;
+          if (profile[i].V[2] != 0.0 ||
+              profile[i].T[2] != 0.0 ||
+              profile[i].N[2] != 0.0)
+              {
+                cerr << "returning false" << endl;
                 return false;
-    
+              }
+
+        }
+
+
         return true;
     }
 }
 
+/******************************************************************************************************
+
+                   '||               .|'''.|                     .'|. '||''|.
+.. .. ..    ....    ||  ..    ....   ||..  '  ... ...  ... ..  .||.    ||   ||    ....  .... ...
+ || || ||  '' .||   || .'   .|...||   ''|||.   ||  ||   ||' ''  ||     ||''|'   .|...||  '|.  |
+ || || ||  .|' ||   ||'|.   ||      .     '||  ||  ||   ||      ||     ||   |.  ||        '|.|
+.|| || ||. '|..'|' .||. ||.  '|...' |'....|'   '|..'|. .||.    .||.   .||.  '|'  '|...'    '|
+
+
+*******************************************************************************************************/
+
 Surface makeSurfRev(const Curve &profile, unsigned steps)
-{
+{   // Surfaces of Revolution
     Surface surface;
-    
+
     if (!checkFlat(profile))
     {
         cerr << "surfRev profile curve must be flat on xy plane." << endl;
@@ -31,10 +51,26 @@ Surface makeSurfRev(const Curve &profile, unsigned steps)
 
     // TODO: Here you should build the surface.  See surf.h for details.
 
+    // +1. evaluate the control points along the profile curve (curve.cpp)
+    /* 2. generate the vertices of the surface ...
+          ... by simply duplicating the evaluated curve ...
+          ... points at evenly sampled values of rotation. */
+
     cerr << "\t>>> makeSurfRev called (but not implemented).\n\t>>> Returning empty surface." << endl;
- 
+
     return surface;
 }
+
+/********************************************************************************************************
+
+                   '||               ..|'''.|                     ..|'''.|          '||
+.. .. ..    ....    ||  ..    ....  .|'     '    ....  .. ...   .|'     '  .... ...  ||
+ || || ||  '' .||   || .'   .|...|| ||    .... .|...||  ||  ||  ||          '|.  |   ||
+ || || ||  .|' ||   ||'|.   ||      '|.    ||  ||       ||  ||  '|.      .   '|.|    ||
+.|| || ||. '|..'|' .||. ||.  '|...'  ''|...'|   '|...' .||. ||.  ''|....'     '|    .||.
+                                                                           .. |
+                                                                            ''
+*********************************************************************************************************/
 
 Surface makeGenCyl(const Curve &profile, const Curve &sweep )
 {
@@ -52,6 +88,17 @@ Surface makeGenCyl(const Curve &profile, const Curve &sweep )
 
     return surface;
 }
+
+/***********************************************************************************************************
+
+     '||                               .|'''.|                     .'|.
+   .. ||  ... ..   ....   ... ... ...  ||..  '  ... ...  ... ..  .||.    ....     ....    ....
+ .'  '||   ||' '' '' .||   ||  ||  |    ''|||.   ||  ||   ||' ''  ||    '' .||  .|   '' .|...||
+ |.   ||   ||     .|' ||    ||| |||   .     '||  ||  ||   ||      ||    .|' ||  ||      ||
+ '|..'||. .||.    '|..'|'    |   |    |'....|'   '|..'|. .||.    .||.   '|..'|'  '|...'  '|...'
+
+
+************************************************************************************************************/
 
 void drawSurface(const Surface &surface, bool shaded)
 {
@@ -72,10 +119,10 @@ void drawSurface(const Surface &surface, bool shaded)
         glCullFace(GL_BACK);
     }
     else
-    {        
+    {
         glDisable(GL_LIGHTING);
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-        
+
         glColor4f(0.4f,0.4f,0.4f,1.f);
         glLineWidth(1);
     }
@@ -94,6 +141,16 @@ void drawSurface(const Surface &surface, bool shaded)
 
     glPopAttrib();
 }
+
+/*****************************************************************************************************
+
+     '||                              '|.   '|'                                    '||
+   .. ||  ... ..   ....   ... ... ...  |'|   |    ...   ... ..  .. .. ..    ....    ||   ....
+ .'  '||   ||' '' '' .||   ||  ||  |   | '|. |  .|  '|.  ||' ''  || || ||  '' .||   ||  ||. '
+ |.   ||   ||     .|' ||    ||| |||    |   |||  ||   ||  ||      || || ||  .|' ||   ||  . '|..
+ '|..'||. .||.    '|..'|'    |   |    .|.   '|   '|..|' .||.    .|| || ||. '|..'|' .||. |'..|'
+
+*****************************************************************************************************/
 
 void drawNormals(const Surface &surface, float len)
 {
@@ -115,9 +172,20 @@ void drawNormals(const Surface &surface, float len)
     glPopAttrib();
 }
 
+/*******************************************************************************************************
+
+                   .                       .    ..|''||   '||         || '||''''|  ||  '||
+  ...   ... ...  .||.  ... ...  ... ...  .||.  .|'    ||   || ...    ...  ||  .   ...   ||    ....
+.|  '|.  ||  ||   ||    ||'  ||  ||  ||   ||   ||      ||  ||'  ||    ||  ||''|    ||   ||  .|...||
+||   ||  ||  ||   ||    ||    |  ||  ||   ||   '|.     ||  ||    |    ||  ||       ||   ||  ||
+ '|..|'  '|..'|.  '|.'  ||...'   '|..'|.  '|.'  ''|...|'   '|...'     || .||.     .||. .||.  '|...'
+                        ||                                         .. |'
+                       ''''                                         ''
+********************************************************************************************************/
+
 void outputObjFile(ostream &out, const Surface &surface)
 {
-    
+
     for (unsigned i=0; i<surface.VV.size(); i++)
         out << "v  "
             << surface.VV[i][0] << " "
@@ -131,7 +199,7 @@ void outputObjFile(ostream &out, const Surface &surface)
             << surface.VN[i][2] << endl;
 
     out << "vt  0 0 0" << endl;
-    
+
     for (unsigned i=0; i<surface.VF.size(); i++)
     {
         out << "f  ";

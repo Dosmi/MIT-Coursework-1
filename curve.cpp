@@ -103,23 +103,37 @@ Curve evalBezier( const vector< Vector3f >& P, unsigned steps )
       Vector4f MonomialBasis = Vector4f(1, i, pow(i,2), pow(i,3));
       Vector4f dydx_MonomialBasis = Vector4f(0, 1, 2*i, 3*pow(i,2));
       Vector4f d2ydx2_MonomialBasis = Vector4f(0, 0, 2, 6*i);
-      CurvePoint point;
+      CurvePoint point; // current iteration points of the curve
+      CurvePoint B_1point; // previous iteration Binormal
       Vector4f GBT = GB * MonomialBasis;
 
       // convertion to Vector3f, so we can write it to 'point.V':
       Vector3f GBT3f = Vector3f ( GBT.x(), GBT.y(), GBT.z() );
       point.V = GBT3f;
 
+      if (i == 0.0)
+      {
+        // Initialize the binormal ...
+        // (set it to just face up for the first iteration):
+        point.B = Vector3f( 0, 0, 1 );
+      }
+      cerr << "made to 120";
       // Tangent vector is first derivative
       Vector4f dydx_GBT = GB * dydx_MonomialBasis;
       point.T = Vector3f(dydx_GBT.x(), dydx_GBT.y(), dydx_GBT.z()).normalized();
 
       // Normal vector is second derivative
       Vector4f d2ydx2_GBT = GB * d2ydx2_MonomialBasis;
-      point.N = Vector3f(d2ydx2_GBT.x(),d2ydx2_GBT.y(), d2ydx2_GBT.z()).normalized();
+      // point.N = Vector3f(d2ydx2_GBT.x(),d2ydx2_GBT.y(), d2ydx2_GBT.z()).normalized();
+      if (i > 0.0)
+      {
+        B_1point = BezierCurve.back();
+        point.N = (B_1point.B * point.T).normalized();
 
-      // Finally, binormal is facing up.
-      point.B = Vector3f( 0, 0, 1 );
+        // Finally, update the binormal:
+        point.B = (point.T * point.N).normalized();
+      }
+
 
       // appending (adding) to the total point vector (list)
       BezierCurve.push_back(point);
@@ -220,8 +234,9 @@ Curve evalBspline( const vector< Vector3f >& P, unsigned steps )
 
     /* ALTERNATIVE WAY OF COMPUTATION, ...
        ... without calling the 'evalBezier' function ...
-       nor computing the inverse and doing some tranformations:
+       nor computing the inverse and doing some tranformations: */
 
+    /*
     for ( double i = 0.0; i <= 1.0; i = i + 1.0/steps )
     {
       cerr << i << endl;
@@ -240,7 +255,7 @@ Curve evalBspline( const vector< Vector3f >& P, unsigned steps )
     }
     */
 
-    cerr << "\t>>> Returning populated B-Spline curve." << endl;
+    cerr << "\t>>> 258Returning populated B-Spline curve." << endl;
 
     // Return a BSpline Curve (Vector of CurvePoint points)
     return BSplineCurve;

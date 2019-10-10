@@ -6,7 +6,7 @@ LINKFLAGS = -lglut -lGL -lGLU
 LINKFLAGS += -L /usr/lib -lvecmath
 # LINKFLAGS += -L /mit/6.837/public/lib -lvecmath
 
-CFLAGS    = -O2 -Wall -ansi -DSOLN
+CFLAGS    = -O2 -Wall -ansi -DSOLN -std=c++11
 CC        = g++
 SRCS      = main.cpp parse.cpp curve.cpp surf.cpp camera.cpp
 OBJS      = $(SRCS:.cpp=.o)
