@@ -108,6 +108,7 @@ Curve evalBezier( const vector< Vector3f >& P, unsigned steps)
     {
       Vector4f MonomialBasis = Vector4f(1, i, pow(i,2), pow(i,3));
       Vector4f dydx_MonomialBasis = Vector4f(0, 1, 2*i, 3*pow(i,2));
+
       Vector4f d2ydx2_MonomialBasis = Vector4f(0, 0, 2, 6*i);
       CurvePoint point; // current iteration points of the curve
       CurvePoint B_1point; // previous iteration Binormal
@@ -122,11 +123,40 @@ Curve evalBezier( const vector< Vector3f >& P, unsigned steps)
 
       if (i == 0.0)
       {
+        cerr << "GB = ControlPolygon * BernsteinBasis = " << endl;
+        ControlPolygon.print();
+        cerr << "*" << endl;
+        BernsteinBasis.print();
+
+        cerr << "==" << endl;
+        GB.print();
+
+        cerr << "GB * dydx_MonomialBasis = " << endl;
+        GB.print();
+        cerr << "*" << endl;
+        dydx_MonomialBasis.print();
+        cerr << "==" << endl;
+
+        dydx_GBT.print();
+
+        cerr << "TANGENT, points to x axis: "; point.T.print();
+        cerr << endl << "dydx of GBT: "; dydx_GBT.print();
         // Initialize the binormal ...
         // (set it to just face up for the first iteration):
-        Vector3f findingOrthoT_B = Vector3f( 0, 0, 1 );
+        // Vector3f findingOrthoT_B = Vector3f( 1, 0, 0 );
+        // Select the Binormal to be pointing -1 in z axis, and then,
+        // ... since the Tangent is pointing at x axis, and is negative
+        // ... (the assumption was made that the profiles will ALWAYS lie
+        // ...  on the left (negative) side of the x axis in MIT Coursework 1)
+        Vector3f initializeB = Vector3f( 0, 0, -1 );
+        Vector3f initializeT = Vector3f( -1, 0, 0 );
+        // Vector3f findingOrthoT_B = Vector3f( 0, 0, 1);
 
-        point.B = x(point.T, findingOrthoT_B);
+        point.B = initializeB;
+        // point.T = initializeT;
+        // point.B = x(point.T, findingOrthoT_B);
+
+        point.N = x(point.B, point.T);
       }
 
       // Normal vector is second derivative
@@ -139,16 +169,22 @@ Curve evalBezier( const vector< Vector3f >& P, unsigned steps)
         point.N = x(B_1point.B, point.T).normalized();
         point.B = x(point.T, point.N);
       }
+      //
+      // else
+      // {
+      //   point.N = x(point.B, point.T);
+      // }
+      cerr << i << ") Testing TANGENT: " << endl;
+      cerr << "\t\t"; point.T.print();
 
-      else
-      {
-        Vector3f N3 = Vector3f (
-                                  point.B[1] * point.T[2] - point.B[2] * point.T[1],
-                                  point.B[2] * point.T[0] - point.B[0] * point.T[2],
-                                  point.B[0] * point.T[1] - point.B[1] * point.T[0]
-                                );
-        point.N = x(point.B, point.T);
-      }
+      if (i > 0.0)
+        if ( ((BezierCurve.back().N[2] < 0.0) && (point.N[2] > 0.0)) ||
+             ((BezierCurve.back().N[2] > 0.0) && (point.N[2] < 0.0)) )
+           {
+             cerr << "Normals flipped direction at i=" << i << endl;
+             BezierCurve.back().N.print();
+             point.N.print();
+           }
 
       BezierCurve.push_back(point);
 
@@ -233,7 +269,7 @@ Curve evalBspline( const vector< Vector3f >& P, unsigned steps )
         0,  0,  0,  1
       );
       // updating the Geometry x Basis (GB-1B)
-      GB = GB * BernsteinBasis.inverse();;
+      GB = GB * BernsteinBasis.inverse();
 
       vector< Vector3f > Points;
 
@@ -260,10 +296,10 @@ Curve evalBspline( const vector< Vector3f >& P, unsigned steps )
         // newCurveToAdd[i].B.print();
         // newCurveToAdd[i].T.print();
 
-
+        /*
         CurvePoint testpoint;
 
-        for ( float singleRotation = (2*3.14)/20; singleRotation <= 2*3.14; singleRotation += (2*3.14)/20 )
+        for ( float singleRotation = (2*3.14)/2; singleRotation <= 2*3.14; singleRotation += (2*3.14)/2 )
         {
           Matrix4f matrixOfOnes(1);
           // translate the 3x1 profile vector by the matrix of ones:
@@ -281,6 +317,7 @@ Curve evalBspline( const vector< Vector3f >& P, unsigned steps )
           testpoint.V = rotatedHomogeniousVector.xyz();
           BSplineCurve.push_back(testpoint);
         }
+        */
 
         BSplineCurve.push_back(newCurveToAdd[i]);
       }
@@ -327,10 +364,6 @@ Curve evalBspline( const vector< Vector3f >& P, unsigned steps )
     //   BSplineCurve[i].T.print();
     //   cerr << endl;
     // }
-
-
-
-
 
     return BSplineCurve;
 }

@@ -12,9 +12,9 @@ namespace
         cerr << "profile size: " << profile.size() << endl;
         for (unsigned i=0; i<profile.size(); i++)
         { // if profile is empty, just returns true (why it works without any normals etc ...
-          profile[i].V.print();
-          profile[i].T.print();
-          profile[i].N.print();
+          cerr << "V: "; profile[i].V.print();
+          cerr << "T: "; profile[i].T.print();
+          cerr << "N: "; profile[i].N.print();
 
           cerr << i << ") V:" << profile[i].V[2] << " T:" << profile[i].T[2] << " N:" << profile[i].N[2] << endl;
           // cerr << "V1:" << profile[i].V[1] << " T1:" << profile[i].T[1] << " N1:" << profile[i].N[1] << endl;
@@ -24,7 +24,7 @@ namespace
               profile[i].N[2] != 0.0)
               {
                 cerr << "returning false" << endl;
-                return false;
+                // return false;
               }
 
         }
@@ -65,7 +65,7 @@ Surface makeSurfRev(const Curve &profile, unsigned steps)
     for( unsigned i = 0; i < profile.size(); i++ )
     {
       int surface_point_index = 0;
-      cerr << "steps:" << steps << endl;
+      // cerr << "steps:" << steps << endl;
       for ( float singleRotation = (2*3.14)/steps; singleRotation <= 2*3.14; singleRotation += (2*3.14)/steps )
       {
         Matrix4f matrixOfOnes(1);
