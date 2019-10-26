@@ -238,10 +238,10 @@ bool parseFile(
         // const_cast<const vector<Vector3f>&>(cpsToAdd).print();
         // std::as_const(cpsToAdd).print();
 
-        for (Vector3f i : cpsToAdd)
-        {
-          i.print();
-        }
+        // for (Vector3f i : cpsToAdd)
+        // {
+        //   i.print();
+        // }
 
 
         cerr << " + ctrl points +" << endl;

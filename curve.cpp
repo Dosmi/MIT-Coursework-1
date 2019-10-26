@@ -20,8 +20,16 @@ namespace
         const float eps = 1e-8f;
         return ( lhs - rhs ).absSquared() < eps;
     }
+}
 
-
+Vector3f x (Vector3f a, Vector3f b)
+{
+  Vector3f axb = Vector3f (
+                            a[1] * b[2] - a[2] * b[1],
+                            a[2] * b[0] - a[0] * b[2],
+                            a[0] * b[1] - a[1] * b[0]
+                          );
+  return axb;
 }
 
 
@@ -33,17 +41,17 @@ namespace
 //  '|...'    '|    '|..'|' .||. .||...|'   '|...' ||....| .||.  '|...' .||.
 //
 //
-Curve evalBezier( const vector< Vector3f >& P, unsigned steps )
+Curve evalBezier( const vector< Vector3f >& P, unsigned steps)
 {
     vector< CurvePoint > BezierCurve;
     Matrix4f ControlPolygon;
     // Check
+    cerr << " P SIZE: " << P.size() << endl;
     if( P.size() < 4 || P.size() % 3 != 1 )
     {
         cerr << "evalBezier must be called with 3n+1 control points." << endl;
         exit( 0 );
     }
-
     // TODO:
     // You should implement this function so that it returns a Curve
     // (e.g., a vector< CurvePoint >).  The variable "steps" tells you
@@ -63,7 +71,7 @@ Curve evalBezier( const vector< Vector3f >& P, unsigned steps )
 
     cerr << "\t>>> evalBezier has been called with the following input:" << endl;
 
-    cerr << "\t>>> Control points (type vector< Vector3f >): "<< endl;
+    cerr << "\t>>> Bezier: Control points (type vector< Vector3f >): "<< endl;
     ControlPolygon = Matrix4f(0);
     for( unsigned i = 0; i < P.size(); ++i )
     {
@@ -73,8 +81,6 @@ Curve evalBezier( const vector< Vector3f >& P, unsigned steps )
         Vector4f col = Vector4f(P[i], 0);
         ControlPolygon.setCol(i, col);
     }
-
-
 
     cerr << "\t>>> Steps (type steps): " << steps << endl;
 
@@ -111,36 +117,44 @@ Curve evalBezier( const vector< Vector3f >& P, unsigned steps )
       Vector3f GBT3f = Vector3f ( GBT.x(), GBT.y(), GBT.z() );
       point.V = GBT3f;
 
+      Vector4f dydx_GBT = GB * dydx_MonomialBasis;
+      point.T = Vector3f(dydx_GBT.x(), dydx_GBT.y(), dydx_GBT.z()).normalized();
+
       if (i == 0.0)
       {
         // Initialize the binormal ...
         // (set it to just face up for the first iteration):
-        point.B = Vector3f( 0, 0, 1 );
+        Vector3f findingOrthoT_B = Vector3f( 0, 0, 1 );
+
+        point.B = x(point.T, findingOrthoT_B);
       }
-      cerr << "made to 120";
-      // Tangent vector is first derivative
-      Vector4f dydx_GBT = GB * dydx_MonomialBasis;
-      point.T = Vector3f(dydx_GBT.x(), dydx_GBT.y(), dydx_GBT.z()).normalized();
 
       // Normal vector is second derivative
       Vector4f d2ydx2_GBT = GB * d2ydx2_MonomialBasis;
-      // point.N = Vector3f(d2ydx2_GBT.x(),d2ydx2_GBT.y(), d2ydx2_GBT.z()).normalized();
+
       if (i > 0.0)
       {
         B_1point = BezierCurve.back();
-        point.N = (B_1point.B * point.T).normalized();
 
-        // Finally, update the binormal:
-        point.B = (point.T * point.N).normalized();
+        point.N = x(B_1point.B, point.T).normalized();
+        point.B = x(point.T, point.N);
       }
 
+      else
+      {
+        Vector3f N3 = Vector3f (
+                                  point.B[1] * point.T[2] - point.B[2] * point.T[1],
+                                  point.B[2] * point.T[0] - point.B[0] * point.T[2],
+                                  point.B[0] * point.T[1] - point.B[1] * point.T[0]
+                                );
+        point.N = x(point.B, point.T);
+      }
 
-      // appending (adding) to the total point vector (list)
       BezierCurve.push_back(point);
 
     }
 
-    cerr << "\t>>> Returning populated curve:" << endl;
+    cerr << "\t>>> Bezier: Returning populated curve:" << endl;
 
     // Right now this will just return this empty curve.
     return BezierCurve;
@@ -175,62 +189,80 @@ Curve evalBspline( const vector< Vector3f >& P, unsigned steps )
 
     cerr << "\t>>> evalBSpline has been called with the following input:" << endl;
 
-    cerr << "\t>>> Control points (type vector< Vector3f >): "<< endl;
-    for( unsigned i = 0; i < P.size(); ++i )
+    cerr << "\t>>> BSpline: Control points (type vector< Vector3f >): "<< endl;
+    cerr << "Found: " << P.size() << " points." << endl;
+    for( unsigned offset = 0; offset < P.size(); offset++ )
     {
-        cerr << "\t\t>>> " << "x=" << P[i].x()
-                         << ", y=" << P[i].y()
-                         << ", z=" << P[i].z() << endl;
-        Vector4f col = Vector4f(P[i], 0);
-        ControlPolygon.setCol(i, col);
+      cerr << "offset: " << offset << endl;
+      int untilcolumn;
+      if (P.size() - offset < 4) untilcolumn = P.size() - offset;
+      else untilcolumn = 4;
+      int columnID = 0;
+      for( unsigned i = offset; i < offset+untilcolumn; ++i )
+      {
+          if (i == P.size()) break;
+          cerr << "\t\t>>> " << i << ") x=" << P[i].x()
+                           << ", y=" << P[i].y()
+                           << ", z=" << P[i].z() << endl;
+          Vector4f col = Vector4f(P[i], 0);
+          ControlPolygon.setCol(columnID, col);
+          columnID++;
+      }
+
+      cerr << "\t>>> Steps (type steps): " << steps << endl;
+
+      cerr << "\t>>> Control Polygon x B-Spline Basis: " << endl;
+      Matrix4f BSplineBasis = Matrix4f
+      (
+        1./6., -3./6.,  3./6., -1./6.,
+        4./6.,  0./6., -6./6.,  3./6.,
+        1./6.,  3./6.,  3./6., -3./6.,
+        0./6.,  0./6.,  0./6.,  1./6.
+      );
+
+      Matrix4f GB = ControlPolygon * BSplineBasis;
+      /* Changing basis (if regular form is GBT, ...
+         ... right now making it GB-1BT and 'evalBezier' ...
+         ... will convert it back to BGT [B-1 is the inverse] ) */
+
+      Matrix4f BernsteinBasis = Matrix4f
+      (
+        1, -3,  3, -1,
+        0,  3, -6,  3,
+        0,  0,  3, -3,
+        0,  0,  0,  1
+      );
+      // updating the Geometry x Basis (GB-1B)
+      GB = GB * BernsteinBasis.inverse();;
+
+      vector< Vector3f > Points;
+
+      Vector3f point1 = Vector3f( GB.getCol(0)[0], GB.getCol(0)[1], GB.getCol(0)[2] );
+      Points.push_back(point1);
+      Vector3f point2 = Vector3f( GB.getCol(1)[0], GB.getCol(1)[1], GB.getCol(1)[2] );
+      Points.push_back(point2);
+      Vector3f point3 = Vector3f( GB.getCol(2)[0], GB.getCol(2)[1], GB.getCol(2)[2] );
+      Points.push_back(point3);
+      Vector3f point4 = Vector3f( GB.getCol(3)[0], GB.getCol(3)[1], GB.getCol(3)[2] );
+      Points.push_back(point4);
+
+      cerr << "Size of the current BSplineCurve: " << BSplineCurve.size() << endl;
+      cerr << " ---------> SENDING POINTS TO BEZIER <---------- " << endl;
+      vector< CurvePoint > newCurveToAdd = evalBezier( Points, steps );
+
+      cerr << "Adding " << newCurveToAdd.size() << " more points" << endl;
+
+      for( unsigned i = 0; i < newCurveToAdd.size(); i++ )
+      {
+        // cerr << i << ") ";
+        // newCurveToAdd[i].V.print();
+        // newCurveToAdd[i].N.print();
+        // newCurveToAdd[i].B.print();
+        // newCurveToAdd[i].T.print();
+        BSplineCurve.push_back(newCurveToAdd[i]);
+      }
     }
 
-    cerr << "\t>>> Steps (type steps): " << steps << endl;
-
-    cerr << "\t>>> Control Polygon x B-Spline Basis: " << endl;
-    Matrix4f BSplineBasis = Matrix4f
-    (
-      1./6., -3./6.,  3./6., -1./6.,
-      4./6.,  0./6., -6./6.,  3./6.,
-      1./6.,  3./6.,  3./6., -3./6.,
-      0./6.,  0./6.,  0./6.,  1./6.
-    );
-    BSplineBasis.print();
-
-    cerr << "GB:" << endl;
-    Matrix4f GB = ControlPolygon * BSplineBasis;
-    GB.print();
-    GB.getCol(0).print();
-    cerr << GB.getCol(0)[0] << endl;
-
-    cerr << "END GB" << endl;
-
-    /* Changing basis (if regular form is GBT, ...
-       ... right now making it GB-1BT and 'evalBezier' ...
-       ... will convert it back to BGT [B-1 is the inverse] ) */
-
-    Matrix4f BernsteinBasis = Matrix4f
-    (
-      1, -3,  3, -1,
-      0,  3, -6,  3,
-      0,  0,  3, -3,
-      0,  0,  0,  1
-    );
-    // updating the Geometry x Basis (GB-1B)
-    GB = GB * BernsteinBasis.inverse();;
-
-    vector< Vector3f > Points;
-
-    Vector3f point1 = Vector3f( GB.getCol(0)[0], GB.getCol(0)[1], GB.getCol(0)[2] );
-    Points.push_back(point1);
-    Vector3f point2 = Vector3f( GB.getCol(1)[0], GB.getCol(1)[1], GB.getCol(1)[2] );
-    Points.push_back(point2);
-    Vector3f point3 = Vector3f( GB.getCol(2)[0], GB.getCol(2)[1], GB.getCol(2)[2] );
-    Points.push_back(point3);
-    Vector3f point4 = Vector3f( GB.getCol(3)[0], GB.getCol(3)[1], GB.getCol(3)[2] );
-    Points.push_back(point4);
-
-    BSplineCurve = evalBezier( Points, steps );
 
     /* ALTERNATIVE WAY OF COMPUTATION, ...
        ... without calling the 'evalBezier' function ...
@@ -256,8 +288,23 @@ Curve evalBspline( const vector< Vector3f >& P, unsigned steps )
     */
 
     cerr << "\t>>> 258Returning populated B-Spline curve." << endl;
-
+    cerr << "Size of the finished BSplineCurve: " << BSplineCurve.size() << endl;
     // Return a BSpline Curve (Vector of CurvePoint points)
+
+    // for( unsigned i = 0; i < BSplineCurve.size(); i++ )
+    // {
+    //   cerr << "->" << i << ") ";
+    //   cerr << "\tV\t";
+    //   BSplineCurve[i].V.print();
+    //   cerr << "\tN\t";
+    //   BSplineCurve[i].N.print();
+    //   cerr << "\tB\t";
+    //   BSplineCurve[i].B.print();
+    //   cerr << "\tT\t";
+    //   BSplineCurve[i].T.print();
+    //   cerr << endl;
+    // }
+
     return BSplineCurve;
 }
 
@@ -343,11 +390,16 @@ void drawCurve( const Curve& curve, float framesize )
             glMultMatrixf( M );
             glScaled( framesize, framesize, framesize );
             glBegin( GL_LINES );
-            glColor3f( 1, 0, 0 ); glVertex3d( 0, 0, 0 ); glVertex3d( 1, 0, 0 );
-            glColor3f( 0, 1, 0 ); glVertex3d( 0, 0, 0 ); glVertex3d( 0, 1, 0 );
-            // recolored to cyan for better normal contrast: (0,1,1) instead of (0,1,1)
+            // normals (red):
             // glColor3f(red, green, blue)
-            glColor3f( 0, 1, 1 ); glVertex3d( 0, 0, 0 ); glVertex3d( 0, 1, 1 );
+            // glVertex3d( 0, 0, 0 )
+            // glVertex3d( 1, 0, 0 ) which vertex to show (if 0,1,1 will draw B+T, 0,0,1 - T)
+            glColor3f( 1, 0, 0 ); glVertex3d( 0, 0, 0 ); glVertex3d( 1, 0, 0 );
+            // binormals B (green)
+            glColor3f( 0, 1, 0 ); glVertex3d( 0, 0, 0 ); glVertex3d( 0, 1, 0 );
+            // recolored T's to cyan for better normal contrast: (0,1,1) instead of (0,0,1)
+            // glColor3f(red, green, blue):
+            glColor3f( 0, 1, 1 ); glVertex3d( 0, 0, 0 ); glVertex3d( 0, 0, 1 );
             glEnd();
             glPopMatrix();
         }

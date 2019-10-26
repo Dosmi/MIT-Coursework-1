@@ -9,6 +9,7 @@
 // Tup3u is a handy shortcut for an array of 3 unsigned integers.  You
 // can access elements using [], and you can copy using =, and so on.
 typedef tuple< unsigned, 3 > Tup3u;
+// typedef tuple< 3, unsigned > Tup3u;
 
 // Surface is just a struct that contains vertices, normals, and
 // faces.  VV[i] is the position of vertex i, and VN[i] is the normal
@@ -42,4 +43,3 @@ void outputObjFile( std::ostream& out, const Surface& surface );
 
 
 #endif
-
