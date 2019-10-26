@@ -259,6 +259,29 @@ Curve evalBspline( const vector< Vector3f >& P, unsigned steps )
         // newCurveToAdd[i].N.print();
         // newCurveToAdd[i].B.print();
         // newCurveToAdd[i].T.print();
+
+
+        CurvePoint testpoint;
+
+        for ( float singleRotation = (2*3.14)/20; singleRotation <= 2*3.14; singleRotation += (2*3.14)/20 )
+        {
+          Matrix4f matrixOfOnes(1);
+          // translate the 3x1 profile vector by the matrix of ones:
+          // (just so we are able to apply transforms later by multiplying it with a 4x4 matrix)
+          Matrix4f profileMatrix = matrixOfOnes.translation(newCurveToAdd[i].V);
+
+          // this gets the necessary rotation matrix (on Y axis)
+          Matrix4f rotationMatrix = matrixOfOnes.rotateY(singleRotation);
+          // finally, this multiplication rotates the vector (represented by a matrix)
+          Matrix4f rotatedYmatrix = rotationMatrix * profileMatrix;
+
+          // get the last column (where the homogenious vector is)
+          Vector4f rotatedHomogeniousVector = rotatedYmatrix.getCol(3);
+
+          testpoint.V = rotatedHomogeniousVector.xyz();
+          BSplineCurve.push_back(testpoint);
+        }
+
         BSplineCurve.push_back(newCurveToAdd[i]);
       }
     }
@@ -304,6 +327,10 @@ Curve evalBspline( const vector< Vector3f >& P, unsigned steps )
     //   BSplineCurve[i].T.print();
     //   cerr << endl;
     // }
+
+
+
+
 
     return BSplineCurve;
 }

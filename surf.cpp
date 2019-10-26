@@ -68,72 +68,25 @@ Surface makeSurfRev(const Curve &profile, unsigned steps)
       cerr << "steps:" << steps << endl;
       for ( float singleRotation = (2*3.14)/steps; singleRotation <= 2*3.14; singleRotation += (2*3.14)/steps )
       {
-        // cerr << surface_point_index << endl;
-        cerr << endl << "rotate:D" << singleRotation << endl;
-
         Matrix4f matrixOfOnes(1);
-        // matrixOfOnes.print();
-        Matrix4f profileVector = matrixOfOnes.translation(profile[i].V);
-        cerr << "translated:" << endl;
-        profileVector.print();
+        // translate the 3x1 profile vector by the matrix of ones:
+        // (just so we are able to apply transforms later by multiplying it with a 4x4 matrix)
+        Matrix4f profileMatrix = matrixOfOnes.translation(profile[i].V);
 
-        // Matrix4f properWay = profileVector.rotateY(singleRotation);
-        // cerr << "TRYING NEW FUNCTION: " << endl;
-        // properWay.print();
-
+        // this gets the necessary rotation matrix (on Y axis)
         Matrix4f rotationMatrix = matrixOfOnes.rotateY(singleRotation);
-        // cerr << "rotation matrix:" << endl;
-        // rotationMatrix.print();
-        //
+        // finally, this multiplication rotates the vector (represented by a matrix)
+        Matrix4f rotatedYmatrix = rotationMatrix * profileMatrix;
 
-      	Matrix4f product; // zeroes
+        // get the last column (where the homogenious vector is)
+        Vector4f rotatedHomogeniousVector = rotatedYmatrix.getCol(3);
 
-      	for( int i = 0; i < 4; ++i )
-      	{
-      		for( int j = 0; j < 4; ++j )
-      		{
-      			for( int k = 0; k < 4; ++k )
-      			{
-      				product( i, k ) += profileVector( i, j ) * rotationMatrix( j, k );
-      			}
-      		}
-      	}
+        surface.VV.push_back( rotatedHomogeniousVector.xyz() );
 
-        Matrix4f rotatedAsMatrix = rotationMatrix * profileVector;
-        cerr << "rotated matrix:" << endl;
-        rotatedAsMatrix.print();
+        surface.VN.push_back( rotatedHomogeniousVector.yzx() );
 
-        cerr << "produce:" << endl;
-        product.print();
+        Tup3u triangle(1u,2u,3u);
 
-        Vector4f vectorized4f = rotatedAsMatrix.getCol(3);
-        // cerr << "4" << endl;
-        // surface.VV[surface_point_index] = ((profileVector * rotationMatrix).getCol(3)).xyz;
-        //surface[surface_point_index].VV = vectorized4f.xyz();
-        // cerr << "vectorized print: ";
-        // vectorized4f.print();
-        // Tup3u triangle = <vectorized4f.x(), vectorized4f.y(), vectorized4f.z()>;
-        // Tup3u triangle;
-        // triangle = make_tuple(1u,2u,3u);
-
-        Tup3u triangle(1u, 2u, 3u);
-        // triangle[0] = vectorized4f.x();
-        // triangle[1] = vectorized4f.y();
-        // triangle[2] = vectorized4f.z();
-
-        // cerr << "<" << triangle[0] << ", " << triangle[1] << ", " << triangle[2] << ">" << endl;
-        // triangle.push_back(vectorized4f.x());
-        // triangle.push_back(vectorized4f.y());
-        // triangle.push_back(vectorized4f.z());
-
-        cerr << "Before rotation: ";
-        profile[i].V.print();
-        cerr << "After rotation: ";
-        (vectorized4f.xyz()).print();
-
-
-        surface.VV.push_back(vectorized4f.xyz());
-        surface.VN.push_back(vectorized4f.yzx());
         surface.VF.push_back(triangle);
         // cerr << "5" << endl;
         surface_point_index++;
