@@ -32,6 +32,57 @@ Vector3f x (Vector3f a, Vector3f b)
   return axb;
 }
 
+Vector3f rotateVertexAroundAxis_y ( CurvePoint pointOnCurve, float radians)
+{
+  Matrix4f matrixOfOnes(1);
+  // translate the 3x1 profile vector by the matrix of ones:
+  // (just so we are able to apply transforms later by multiplying it with a 4x4 matrix)
+  Matrix4f profileMatrix = matrixOfOnes.translation(pointOnCurve.V);
+
+  // this gets the necessary rotation matrix (on Y axis)
+  Matrix4f rotationMatrix = matrixOfOnes.rotateY(radians);
+  // finally, this multiplication rotates the vector (represented by a matrix)
+  Matrix4f rotatedYmatrix = rotationMatrix * profileMatrix;
+
+  // get the last column (where the homogenious vector is)
+  Vector4f rotatedHomogeniousVector = rotatedYmatrix.getCol(3);
+
+  return rotatedHomogeniousVector.xyz();
+}
+
+Vector3f rotateNormalAroundAxis_y ( CurvePoint pointOnCurve, float radians)
+{
+  Matrix4f matrixOfOnes(1);
+  // translate the 3x1 profile vector by the matrix of ones:
+  // (just so we are able to apply transforms later by multiplying it with a 4x4 matrix)
+  Matrix3f profileMatrix(
+                          1.0, 0.0, pointOnCurve.N[0],
+                          0.0, 1.0, pointOnCurve.N[1],
+                          0.0, 0.0, pointOnCurve.N[2]
+                        );
+
+  // this gets the necessary rotation matrix (on Y axis)
+  Matrix4f rotationMatrix = matrixOfOnes.rotateY(radians);
+  Matrix3f topleftSubmiatrix = rotationMatrix.getSubmatrix3x3(0,0);
+  topleftSubmiatrix.transpose();
+  Matrix3f inversedtranspose = topleftSubmiatrix.inverse();
+
+  // finally, this multiplication rotates the vector (represented by a matrix)
+  cerr << "DEBUGGING NORMALS: " << endl;
+  cerr << "inversedtranspose" << endl;
+  inversedtranspose.print();
+  cerr << "* profileMatrix" << endl;
+  profileMatrix.print();
+  Matrix3f rotatedYmatrix = inversedtranspose * profileMatrix;
+  cerr << "==" << endl;
+  rotatedYmatrix.print();
+
+  // get the last column (where the homogenious vector is)
+  Vector3f rotatedNormal = rotatedYmatrix.getCol(2);
+
+  return rotatedNormal;
+}
+
 
 //
 //                          '||  '||''|.                    ||
@@ -234,93 +285,92 @@ Curve evalBspline( const vector< Vector3f >& P, unsigned steps )
       if (P.size() - offset < 4) untilcolumn = P.size() - offset;
       else untilcolumn = 4;
       int columnID = 0;
-      for( unsigned i = offset; i < offset+untilcolumn; ++i )
-      {
-          if (i == P.size()) break;
-          cerr << "\t\t>>> " << i << ") x=" << P[i].x()
-                           << ", y=" << P[i].y()
-                           << ", z=" << P[i].z() << endl;
-          Vector4f col = Vector4f(P[i], 0);
-          ControlPolygon.setCol(columnID, col);
-          columnID++;
-      }
 
-      cerr << "\t>>> Steps (type steps): " << steps << endl;
-
-      cerr << "\t>>> Control Polygon x B-Spline Basis: " << endl;
-      Matrix4f BSplineBasis = Matrix4f
-      (
-        1./6., -3./6.,  3./6., -1./6.,
-        4./6.,  0./6., -6./6.,  3./6.,
-        1./6.,  3./6.,  3./6., -3./6.,
-        0./6.,  0./6.,  0./6.,  1./6.
-      );
-
-      Matrix4f GB = ControlPolygon * BSplineBasis;
-      /* Changing basis (if regular form is GBT, ...
-         ... right now making it GB-1BT and 'evalBezier' ...
-         ... will convert it back to BGT [B-1 is the inverse] ) */
-
-      Matrix4f BernsteinBasis = Matrix4f
-      (
-        1, -3,  3, -1,
-        0,  3, -6,  3,
-        0,  0,  3, -3,
-        0,  0,  0,  1
-      );
-      // updating the Geometry x Basis (GB-1B)
-      GB = GB * BernsteinBasis.inverse();
-
-      vector< Vector3f > Points;
-
-      Vector3f point1 = Vector3f( GB.getCol(0)[0], GB.getCol(0)[1], GB.getCol(0)[2] );
-      Points.push_back(point1);
-      Vector3f point2 = Vector3f( GB.getCol(1)[0], GB.getCol(1)[1], GB.getCol(1)[2] );
-      Points.push_back(point2);
-      Vector3f point3 = Vector3f( GB.getCol(2)[0], GB.getCol(2)[1], GB.getCol(2)[2] );
-      Points.push_back(point3);
-      Vector3f point4 = Vector3f( GB.getCol(3)[0], GB.getCol(3)[1], GB.getCol(3)[2] );
-      Points.push_back(point4);
-
-      cerr << "Size of the current BSplineCurve: " << BSplineCurve.size() << endl;
-      cerr << " ---------> SENDING POINTS TO BEZIER <---------- " << endl;
-      vector< CurvePoint > newCurveToAdd = evalBezier( Points, steps );
-
-      cerr << "Adding " << newCurveToAdd.size() << " more points" << endl;
-
-      for( unsigned i = 0; i < newCurveToAdd.size(); i++ )
-      {
-        // cerr << i << ") ";
-        // newCurveToAdd[i].V.print();
-        // newCurveToAdd[i].N.print();
-        // newCurveToAdd[i].B.print();
-        // newCurveToAdd[i].T.print();
-
-        /*
-        CurvePoint testpoint;
-
-        for ( float singleRotation = (2*3.14)/2; singleRotation <= 2*3.14; singleRotation += (2*3.14)/2 )
+      if (untilcolumn >= 4)
+      { // continue for until there are less than 4 vertices in the control point
+        // ... since if there is less, we have already covered all control points
+        for( unsigned i = offset; i < offset+untilcolumn; ++i )
         {
-          Matrix4f matrixOfOnes(1);
-          // translate the 3x1 profile vector by the matrix of ones:
-          // (just so we are able to apply transforms later by multiplying it with a 4x4 matrix)
-          Matrix4f profileMatrix = matrixOfOnes.translation(newCurveToAdd[i].V);
-
-          // this gets the necessary rotation matrix (on Y axis)
-          Matrix4f rotationMatrix = matrixOfOnes.rotateY(singleRotation);
-          // finally, this multiplication rotates the vector (represented by a matrix)
-          Matrix4f rotatedYmatrix = rotationMatrix * profileMatrix;
-
-          // get the last column (where the homogenious vector is)
-          Vector4f rotatedHomogeniousVector = rotatedYmatrix.getCol(3);
-
-          testpoint.V = rotatedHomogeniousVector.xyz();
-          BSplineCurve.push_back(testpoint);
+            if (i == P.size()) break;
+            cerr << "\t\t>>> " << i << ") x=" << P[i].x()
+                             << ", y=" << P[i].y()
+                             << ", z=" << P[i].z() << endl;
+            Vector4f col = Vector4f(P[i], 0);
+            ControlPolygon.setCol(columnID, col);
+            columnID++;
         }
-        */
 
-        BSplineCurve.push_back(newCurveToAdd[i]);
+        cerr << "\t>>> Steps (type steps): " << steps << endl;
+
+        cerr << "\t>>> Control Polygon x B-Spline Basis: " << endl;
+        Matrix4f BSplineBasis = Matrix4f
+        (
+          1./6., -3./6.,  3./6., -1./6.,
+          4./6.,  0./6., -6./6.,  3./6.,
+          1./6.,  3./6.,  3./6., -3./6.,
+          0./6.,  0./6.,  0./6.,  1./6.
+        );
+
+        Matrix4f GB = ControlPolygon * BSplineBasis;
+        /* Changing basis (if regular form is GBT, ...
+           ... right now making it GB-1BT and 'evalBezier' ...
+           ... will convert it back to BGT [B-1 is the inverse] ) */
+
+        Matrix4f BernsteinBasis = Matrix4f
+        (
+          1, -3,  3, -1,
+          0,  3, -6,  3,
+          0,  0,  3, -3,
+          0,  0,  0,  1
+        );
+        // updating the Geometry x Basis (GB-1B)
+        GB = GB * BernsteinBasis.inverse();
+
+        vector< Vector3f > Points;
+
+        Vector3f point1 = Vector3f( GB.getCol(0)[0], GB.getCol(0)[1], GB.getCol(0)[2] );
+        Points.push_back(point1);
+        Vector3f point2 = Vector3f( GB.getCol(1)[0], GB.getCol(1)[1], GB.getCol(1)[2] );
+        Points.push_back(point2);
+        Vector3f point3 = Vector3f( GB.getCol(2)[0], GB.getCol(2)[1], GB.getCol(2)[2] );
+        Points.push_back(point3);
+        Vector3f point4 = Vector3f( GB.getCol(3)[0], GB.getCol(3)[1], GB.getCol(3)[2] );
+        Points.push_back(point4);
+
+        cerr << "Size of the current BSplineCurve: " << BSplineCurve.size() << endl;
+        cerr << " ---------> SENDING POINTS TO BEZIER <---------- " << endl;
+        vector< CurvePoint > newCurveToAdd = evalBezier( Points, steps );
+
+        cerr << "Adding " << newCurveToAdd.size() << " more points" << endl;
+
+        for( unsigned i = 0; i < newCurveToAdd.size(); i++ )
+        {
+          // cerr << i << ") ";
+          // newCurveToAdd[i].V.print();
+          // newCurveToAdd[i].N.print();
+          // newCurveToAdd[i].B.print();
+          // newCurveToAdd[i].T.print();
+
+          // CurvePoint testpoint;
+
+          // for ( float singleRotation = (2*3.14)/20; singleRotation <= 2*3.14; singleRotation += (2*3.14)/20 )
+          // {
+          //   testpoint.V = rotateVertexAroundAxis_y( newCurveToAdd[i], singleRotation );
+          //   testpoint.N = rotateNormalAroundAxis_y( newCurveToAdd[i], singleRotation );
+          //
+          //   BSplineCurve.push_back(testpoint);
+          // }
+
+
+          BSplineCurve.push_back(newCurveToAdd[i]);
+        }
+
       }
+
+
+
+
+
     }
 
 

@@ -9,20 +9,22 @@ namespace
     // flat on the xy-plane.  This is a check function.
     static bool checkFlat(const Curve &profile)
     {
-        cerr << "profile size: " << profile.size() << endl;
+        // cerr << "profile size: " << profile.size() << endl;
         for (unsigned i=0; i<profile.size(); i++)
         { // if profile is empty, just returns true (why it works without any normals etc ...
-          cerr << "V: "; profile[i].V.print();
-          cerr << "T: "; profile[i].T.print();
-          cerr << "N: "; profile[i].N.print();
+          // cerr << "V: "; profile[i].V.print();
+          // cerr << "T: "; profile[i].T.print();
+          // cerr << "N: "; profile[i].N.print();
 
           cerr << i << ") V:" << profile[i].V[2] << " T:" << profile[i].T[2] << " N:" << profile[i].N[2] << endl;
-          // cerr << "V1:" << profile[i].V[1] << " T1:" << profile[i].T[1] << " N1:" << profile[i].N[1] << endl;
-          // cerr << "V0:" << profile[i].V[0] << " T0:" << profile[i].T[0] << " N0:" << profile[i].N[0] << endl;
           if (profile[i].V[2] != 0.0 ||
               profile[i].T[2] != 0.0 ||
               profile[i].N[2] != 0.0)
               {
+                cerr << i << ") V:" << profile[i].V[2] << " T:" << profile[i].T[2] << " N:" << profile[i].N[2] << endl;
+                cerr << "V: "; profile[i].V.print();
+                cerr << "T: "; profile[i].T.print();
+                cerr << "N: "; profile[i].N.print();
                 cerr << "returning false" << endl;
                 // return false;
               }
@@ -62,36 +64,76 @@ Surface makeSurfRev(const Curve &profile, unsigned steps)
           ... points at evenly sampled values of rotation. */
 
     cerr << profile.size() << endl;
+
+    std::vector< std::vector<Vector3f> > surfacePoints;
+
     for( unsigned i = 0; i < profile.size(); i++ )
     {
-      int surface_point_index = 0;
+      int profile_number = i;
+      // int surface_point_index = 0;
       // cerr << "steps:" << steps << endl;
+      int rotation_number = 0;
+      std::vector <Vector3f> rotationsOfOneProfile;
       for ( float singleRotation = (2*3.14)/steps; singleRotation <= 2*3.14; singleRotation += (2*3.14)/steps )
       {
-        Matrix4f matrixOfOnes(1);
-        // translate the 3x1 profile vector by the matrix of ones:
-        // (just so we are able to apply transforms later by multiplying it with a 4x4 matrix)
-        Matrix4f profileMatrix = matrixOfOnes.translation(profile[i].V);
+        surface.VV.push_back( rotateVertexAroundAxis_y( profile[i], singleRotation ) );
+        surface.VN.push_back( rotateNormalAroundAxis_y( profile[i], singleRotation ) );
 
-        // this gets the necessary rotation matrix (on Y axis)
-        Matrix4f rotationMatrix = matrixOfOnes.rotateY(singleRotation);
-        // finally, this multiplication rotates the vector (represented by a matrix)
-        Matrix4f rotatedYmatrix = rotationMatrix * profileMatrix;
+        rotationsOfOneProfile.push_back(rotateVertexAroundAxis_y( profile[i], singleRotation ));
 
-        // get the last column (where the homogenious vector is)
-        Vector4f rotatedHomogeniousVector = rotatedYmatrix.getCol(3);
+        // Tup3u triangle(1u,2u,3u);
+        //
+        // surface.VF.push_back(triangle);
 
-        surface.VV.push_back( rotatedHomogeniousVector.xyz() );
-
-        surface.VN.push_back( rotatedHomogeniousVector.yzx() );
-
-        Tup3u triangle(1u,2u,3u);
-
-        surface.VF.push_back(triangle);
-        // cerr << "5" << endl;
-        surface_point_index++;
       }
+      surfacePoints.push_back(rotationsOfOneProfile);
 
+    }
+
+    for( unsigned currentProfile = 0; currentProfile < profile.size(); currentProfile++ )
+    {
+      unsigned rotation_number = 0;
+      for ( float singleRotation = (2*3.14)/steps; singleRotation <= 2*3.14; singleRotation += (2*3.14)/steps )
+      {
+          // Tup3u triangle
+          // (
+          //   (currentProfile * steps) + rotation_number,
+          //   (currentProfile * steps) + rotation_number + 1,
+          //   ((currentProfile + 1) * steps) + rotation_number + 1
+          // );
+
+          // Tup3u triangle
+          // (
+          //   ((currentProfile + 1) * steps) + rotation_number + 1,
+          //   (currentProfile * steps) + rotation_number,
+          //   (currentProfile * steps) + rotation_number + 1
+          // );
+
+          Tup3u triangle
+          (
+            ((currentProfile + 1) * steps) + rotation_number + 1,
+            (currentProfile * steps) + rotation_number + 1,
+            (currentProfile * steps) + rotation_number
+          );
+
+          // cerr << "----------- TRIANGLE -------------" << endl;
+          // cerr << triangle[0] << endl;
+          // cerr << triangle[1] << endl;
+          // cerr << triangle[2] << endl << endl;
+
+          surface.VF.push_back(triangle);
+
+          Tup3u bottomtriangle
+          (
+            ((currentProfile + 1) * steps) + rotation_number,
+            ((currentProfile + 1) * steps) + rotation_number + 1,
+            (currentProfile * steps) + rotation_number
+          );
+
+          surface.VF.push_back(bottomtriangle);
+
+          rotation_number++;
+      }
     }
 
     cerr << "\t>>> makeSurfRev called (but not implemented).\n\t>>> Returning empty surface." << endl;
@@ -170,8 +212,10 @@ void drawSurface(const Surface &surface, bool shaded)
     {
         glNormal(surface.VN[surface.VF[i][0]]);
         glVertex(surface.VV[surface.VF[i][0]]);
+
         glNormal(surface.VN[surface.VF[i][1]]);
         glVertex(surface.VV[surface.VF[i][1]]);
+
         glNormal(surface.VN[surface.VF[i][2]]);
         glVertex(surface.VV[surface.VF[i][2]]);
     }
