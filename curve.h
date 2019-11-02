@@ -33,7 +33,7 @@ typedef std::vector< CurvePoint > Curve;
 
 // ------------- other implemented functions --------------------------- //
 Vector3f rotateVertexAroundAxis_y ( CurvePoint pointOnCurve, float radians);
-Vector3f rotateNormalAroundAxis_y ( CurvePoint pointOnCurve, float radians);
+Vector3f rotateNormalAroundAxis ( CurvePoint pointOnCurve, float radians, char axis);
 
 // Assume number of control points properly specifies a piecewise
 // Bezier curve.  I.e., C.size() == 4 + 3*n, n=0,1,...

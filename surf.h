@@ -22,6 +22,7 @@ struct Surface
     std::vector< Tup3u > VF;
 };
 
+Vector3f flipNormals( Vector3f normals );
 // This draws the surface.  Draws the surfaces with smooth shading if
 // shaded==true, otherwise, draws a wireframe.
 void drawSurface( const Surface& surface, bool shaded );

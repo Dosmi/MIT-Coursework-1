@@ -289,9 +289,11 @@ namespace
         glEnable(GL_DEPTH_TEST);   // Depth testing must be turned on
         glEnable(GL_LIGHTING);     // Enable lighting calculations
         glEnable(GL_LIGHT0);       // Turn on light #0.
+        glEnable(GL_CULL_FACE);
 
         // Setup polygon drawing
         glShadeModel(GL_SMOOTH);
+        glCullFace(GL_FRONT);
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
         // Antialiasing
@@ -437,7 +439,7 @@ namespace
         glNewList(gSurfaceLists[1], GL_COMPILE);
         {
             for (unsigned i=0; i<gSurfaces.size(); i++)
-                drawSurface(gSurfaces[i], true);
+                drawSurface(gSurfaces[i], false); // change here for wireframe (false) - shaded - shading
         }
         glEndList();
 

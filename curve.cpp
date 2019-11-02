@@ -50,7 +50,7 @@ Vector3f rotateVertexAroundAxis_y ( CurvePoint pointOnCurve, float radians)
   return rotatedHomogeniousVector.xyz();
 }
 
-Vector3f rotateNormalAroundAxis_y ( CurvePoint pointOnCurve, float radians)
+Vector3f rotateNormalAroundAxis ( CurvePoint pointOnCurve, float radians, char axis)
 {
   Matrix4f matrixOfOnes(1);
   // translate the 3x1 profile vector by the matrix of ones:
@@ -61,21 +61,30 @@ Vector3f rotateNormalAroundAxis_y ( CurvePoint pointOnCurve, float radians)
                           0.0, 0.0, pointOnCurve.N[2]
                         );
 
+  Matrix4f rotationMatrix;
   // this gets the necessary rotation matrix (on Y axis)
-  Matrix4f rotationMatrix = matrixOfOnes.rotateY(radians);
+  if (axis == 'z')
+    rotationMatrix = matrixOfOnes.rotateZ(radians);
+
+  else if (axis == 'y')
+    rotationMatrix = matrixOfOnes.rotateY(radians);
+
+  else // (axis == "x")
+    rotationMatrix = matrixOfOnes.rotateX(radians);
+
   Matrix3f topleftSubmiatrix = rotationMatrix.getSubmatrix3x3(0,0);
   topleftSubmiatrix.transpose();
   Matrix3f inversedtranspose = topleftSubmiatrix.inverse();
 
   // finally, this multiplication rotates the vector (represented by a matrix)
-  cerr << "DEBUGGING NORMALS: " << endl;
-  cerr << "inversedtranspose" << endl;
-  inversedtranspose.print();
-  cerr << "* profileMatrix" << endl;
-  profileMatrix.print();
+  // cerr << "DEBUGGING NORMALS: " << endl;
+  // cerr << "inversedtranspose" << endl;
+  // inversedtranspose.print();
+  // cerr << "* profileMatrix" << endl;
+  // profileMatrix.print();
   Matrix3f rotatedYmatrix = inversedtranspose * profileMatrix;
-  cerr << "==" << endl;
-  rotatedYmatrix.print();
+  // cerr << "==" << endl;
+  // rotatedYmatrix.print();
 
   // get the last column (where the homogenious vector is)
   Vector3f rotatedNormal = rotatedYmatrix.getCol(2);
