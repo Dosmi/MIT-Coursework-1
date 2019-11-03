@@ -439,7 +439,7 @@ namespace
         glNewList(gSurfaceLists[1], GL_COMPILE);
         {
             for (unsigned i=0; i<gSurfaces.size(); i++)
-                drawSurface(gSurfaces[i], false); // change here for wireframe (false) - shaded - shading
+                drawSurface(gSurfaces[i], true); // change here for wireframe (false) - shaded - shading
         }
         glEndList();
 

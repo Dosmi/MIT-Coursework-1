@@ -145,6 +145,7 @@ Surface makeSurfRev(const Curve &profile, unsigned steps)
 Surface makeGenCyl(const Curve &profile, const Curve &sweep )
 {   // generalized cylinders
     Surface surface;
+    bool flagFlippedNormals = false;
 
     if (!checkFlat(sweep))
     {
@@ -152,11 +153,13 @@ Surface makeGenCyl(const Curve &profile, const Curve &sweep )
         exit(0);
     }
 
+    cerr << profile.size() << " & " << sweep.size() << endl;
+
     for( unsigned j = 0; j < profile.size(); j++ )
     {
       for( unsigned i = 0; i < sweep.size(); i++ )
       {
-          float singleRotation = (2*3.14159265359)/sweep.size();
+          float singleRotation = (2*3.14159265359)/(sweep.size()-1);
           Matrix4f translationMatrix = Matrix4f
           (
             1,  0,  0, sweep[i].V[0],
@@ -187,12 +190,15 @@ Surface makeGenCyl(const Curve &profile, const Curve &sweep )
 
           surface.VV.push_back(surfacePoint);
 
-          Vector3f flippedNormals = flipNormals(profile[j].N);
-          CurvePoint flippedPoint;
 
-          flippedPoint.N = Vector3f(flippedNormals[0], flippedNormals[1], flippedNormals[2] );
-          Vector3f rotatedX90Normal = rotateNormalAroundAxis( flippedPoint, 1.57079632679, 'x' );
-          // Vector3f rotatedX90Normal = rotateNormalAroundAxis( profile[j], 1.57079632679, 'x' );
+          // Vector3f flippedNormals = flipNormals(profile[j].N);
+          // CurvePoint flippedPoint;
+          //
+          // flippedPoint.N = Vector3f(flippedNormals[0], flippedNormals[1], flippedNormals[2] );
+          // Vector3f rotatedX90Normal = rotateNormalAroundAxis( flippedPoint, 1.57079632679, 'x' );
+          flagFlippedNormals = true;
+
+          Vector3f rotatedX90Normal = rotateNormalAroundAxis( profile[j], 1.57079632679, 'x' );
 
           CurvePoint rotatedX90Normal_CP;
           rotatedX90Normal_CP.N = Vector3f(rotatedX90Normal[0], rotatedX90Normal[1], rotatedX90Normal[2] );
@@ -203,121 +209,87 @@ Surface makeGenCyl(const Curve &profile, const Curve &sweep )
 
     // TODO: Here you should build the surface.  See surf.h for details.
     // std::vector< std::vector<Vector3f> > surfacePoints;
-    /*
-    std::vector <Vector3f> surfacePoints;
-    for( unsigned i = 0; i < sweep.size(); i++ )
-    {
-        float singleRotation = (2*3.14159265359)/sweep.size();
-        // float singleRotation = (2*1)/sweep.size();
-
-        Matrix4f translationMatrix = Matrix4f
-            (
-              1,  0,  0, sweep[i].V[0],
-              0,  1,  0, sweep[i].V[1],
-              0,  0,  1, sweep[i].V[2],
-              0,  0,  0,  1
-            );
-        for( unsigned j = 0; j < profile.size(); j++ )
-        {
-          Matrix4f originalPoint = Matrix4f
-          (
-            1,  0,  0, profile[j].V[0],
-            0,  1,  0, profile[j].V[1],
-            0,  0,  1, profile[j].V[2],
-            0,  0,  0,  1
-          );
-
-          Matrix4f matrixOfOnes(1);
-          Matrix4f rotateX90 = matrixOfOnes.rotateX(1.57079632679); // performs 90 degree rotation
-          Matrix4f rotateZn = matrixOfOnes.rotateZ(singleRotation*i);
-
-          Matrix4f rotated90Profile = rotateX90 * originalPoint;
-          Matrix4f rotatedProfile = rotateZn * rotated90Profile;
-
-          // Matrix4f movedPoint = translationMatrix * originalPoint;
-          Matrix4f movedPoint = translationMatrix * rotatedProfile;
-          Vector4f surfacePointHG = movedPoint.getCol(3);
-
-          // and now since the point has been moved, we can simply apply a 90 degree rotation
-          // Matrix4f matrixOfOnes(1);
-          // Matrix4f rotateX90 = matrixOfOnes * matrixOfOnes.rotateX(1.5708);
-          //
-          // Matrix4f finalPointLocation = movedPoint * rotateX90;
-
-          // Vector4f surfacePointHG = finalPointLocation.getCol(3);
-          Vector3f surfacePoint(surfacePointHG[0], surfacePointHG[1], surfacePointHG[2]);
-
-          if ((surfacePointHG[0] < 1.0) && (surfacePointHG[1] < 1.0) && (surfacePointHG[2] <  1.0))
-          {
-            surfacePoint.print();
-            cerr << endl;
-          }
-
-          // surfacePoints.push_back(surfacePoint);
-          surface.VV.push_back(surfacePoint);
-
-          Vector3f flippedNormals = flipNormals(profile[j].N);
-          // Vector3f flippedNormals = profile[j].N;
-
-          CurvePoint flippedPoint;
-          flippedPoint.N = Vector3f(flippedNormals[0], flippedNormals[1], flippedNormals[2] );
-          Vector3f rotatedX90Normal = rotateNormalAroundAxis( flippedPoint, 1.57079632679, 'x' );
-          // Vector3f rotatedX90Normal = rotateNormalAroundAxis( profile[j], 1.57, 'x' );
-
-          CurvePoint rotatedX90Normal_CP;
-          rotatedX90Normal_CP.N = Vector3f(rotatedX90Normal[0], rotatedX90Normal[1], rotatedX90Normal[2] );
-
-          surface.VN.push_back( rotateNormalAroundAxis( rotatedX90Normal_CP, singleRotation*i, 'z' ) );
-          // surface.VN.push_back(surfacePoint);
-
-        }
-    }
-    */
 
     // have a separate part FOR NOW, to be move, this is experiemental ...
     int steps = sweep.size();
-    for( unsigned currentProfile = 0; currentProfile < profile.size(); currentProfile++ )
+    for( unsigned currentProfile = 0; currentProfile < profile.size()-1; currentProfile++ )
     {
       unsigned rotation_number = 0;
       for( unsigned i = 0; i < sweep.size(); i++ )
       {
-          // Tup3u triangle
-          // (
-          //   ((currentProfile + 1) * steps) + rotation_number + 1,
-          //   (currentProfile * steps) + rotation_number + 1,
-          //   (currentProfile * steps) + rotation_number
-          // );
+          if (flagFlippedNormals == true)
+          {
+              Tup3u triangle
+              (
+                ((currentProfile + 1) * steps) + rotation_number + 1,
+                (currentProfile * steps) + rotation_number,
+                (currentProfile * steps) + rotation_number + 1
+              );
 
-          Tup3u triangle
-          (
-            ((currentProfile + 1) * steps) + rotation_number + 1,
-            (currentProfile * steps) + rotation_number,
-            (currentProfile * steps) + rotation_number + 1
-          );
+              Tup3u bottomtriangle
+              (
+                ((currentProfile + 1) * steps) + rotation_number,
+                (currentProfile * steps) + rotation_number,
+                ((currentProfile + 1) * steps) + rotation_number + 1
+              );
 
-          // cerr << ((currentProfile + 1) * steps) + rotation_number + 1 << endl;
-          // cerr << (currentProfile * steps) + rotation_number + 1 << endl;
-          // cerr << (currentProfile * steps) + rotation_number << endl;
+              cerr << triangle[0] << endl;
+              surface.VV[triangle[0]].print();
+
+              cerr << triangle[1] << endl;
+              surface.VV[triangle[1]].print();
+
+              cerr << triangle[2] << endl;
+              surface.VV[triangle[2]].print();
+              cerr << endl;
+
+              surface.VF.push_back(triangle);
+              surface.VF.push_back(bottomtriangle);
+          }
+          // the normals had to be flipped - since the original shape given had them inversed,
+          // so to draw the surface properly we must give triangles to OpenGL in
+
+          else
+          {
+              Tup3u triangle
+              (
+                ((currentProfile + 1) * steps) + rotation_number + 1,
+                (currentProfile * steps) + rotation_number + 1,
+                (currentProfile * steps) + rotation_number
+              );
+
+              Tup3u bottomtriangle
+              (
+                ((currentProfile + 1) * steps) + rotation_number,
+                ((currentProfile + 1) * steps) + rotation_number + 1,
+                (currentProfile * steps) + rotation_number
+              );
+
+              cerr << triangle[0] << endl;
+              surface.VV[triangle[0]].print();
+
+              cerr << triangle[1] << endl;
+              surface.VV[triangle[1]].print();
+
+              cerr << triangle[2] << endl;
+              surface.VV[triangle[2]].print();
+              cerr << endl;
+
+              surface.VF.push_back(triangle);
+              surface.VF.push_back(bottomtriangle);
+          }
+
+          // cerr << triangle[0] << endl;
+          // surface.VV[triangle[0]].print();
+          //
+          // cerr << triangle[1] << endl;
+          // surface.VV[triangle[1]].print();
+          //
+          // cerr << triangle[2] << endl;
+          // surface.VV[triangle[2]].print();
           // cerr << endl;
 
-          surface.VF.push_back(triangle);
 
-          // Tup3u bottomtriangle
-          // (
-          //   ((currentProfile + 1) * steps) + rotation_number,
-          //   ((currentProfile + 1) * steps) + rotation_number + 1,
-          //   (currentProfile * steps) + rotation_number
-          // );
-
-          Tup3u bottomtriangle
-          (
-            ((currentProfile + 1) * steps) + rotation_number,
-            (currentProfile * steps) + rotation_number,
-            ((currentProfile + 1) * steps) + rotation_number + 1
-          );
-
-
-          surface.VF.push_back(bottomtriangle);
 
           rotation_number++;
       }
