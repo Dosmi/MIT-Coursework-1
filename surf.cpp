@@ -38,6 +38,18 @@ namespace
     }
 }
 
+float getRotation(Vector3f profilePointingVector, Vector3f sweepTangentVector)
+{
+
+  float dotProduct = Vector3f::dot(profilePointingVector, sweepTangentVector);
+  float divider = profilePointingVector.abs() * sweepTangentVector.abs();
+  float cosAngle = dotProduct / divider;
+
+  float angleBetweenVectors = acos(cosAngle);
+
+  return angleBetweenVectors;
+}
+
 Vector3f flipNormals(Vector3f normals)
 {
   return Vector3f(normals[0]*(-1), normals[1]*(-1), normals[2]*(-1));
@@ -159,7 +171,10 @@ Surface makeGenCyl(const Curve &profile, const Curve &sweep )
     {
       for( unsigned i = 0; i < sweep.size(); i++ )
       {
-          float singleRotation = (2*3.14159265359)/(sweep.size()-1);
+          //float singleRotation = (2*3.14159265359)/(sweep.size()-1);
+          float singleRotation = getRotation(Vector3f(0,0,1), Vector3f(sweep[i].T[0],sweep[i].T[1],sweep[i].T[2]));
+          //float singleRotation = getRotation(Vector3f(sweep[i].T[0],sweep[i].T[1],sweep[i].T[2]), Vector3f(0,1,0));
+
           Matrix4f translationMatrix = Matrix4f
           (
             1,  0,  0, sweep[i].V[0],
@@ -177,9 +192,11 @@ Surface makeGenCyl(const Curve &profile, const Curve &sweep )
           );
 
           Matrix4f matrixOfOnes(1);
-          Matrix4f rotateX90 = matrixOfOnes.rotateX(1.57079632679); // performs 90 degree rotation
-          Matrix4f rotateZn = matrixOfOnes.rotateZ(singleRotation*i);
+          Matrix4f rotateX90 = matrixOfOnes.rotateX(1.57079632679);
+          // Matrix4f rotateZn = matrixOfOnes.rotateZ(singleRotation*i);
+          Matrix4f rotateZn = matrixOfOnes.rotateZ(singleRotation);
 
+          // performs 90 degree rotation (since the circle lies flat at start)
           Matrix4f rotated90Profile = rotateX90 * originalPoint;
           Matrix4f rotatedProfile = rotateZn * rotated90Profile;
 
@@ -191,14 +208,13 @@ Surface makeGenCyl(const Curve &profile, const Curve &sweep )
           surface.VV.push_back(surfacePoint);
 
 
-          // Vector3f flippedNormals = flipNormals(profile[j].N);
-          // CurvePoint flippedPoint;
-          //
-          // flippedPoint.N = Vector3f(flippedNormals[0], flippedNormals[1], flippedNormals[2] );
-          // Vector3f rotatedX90Normal = rotateNormalAroundAxis( flippedPoint, 1.57079632679, 'x' );
-          flagFlippedNormals = true;
+          Vector3f flippedNormals = flipNormals(profile[j].N);
+          CurvePoint flippedPoint;
 
-          Vector3f rotatedX90Normal = rotateNormalAroundAxis( profile[j], 1.57079632679, 'x' );
+          flippedPoint.N = Vector3f(flippedNormals[0], flippedNormals[1], flippedNormals[2] );
+          Vector3f rotatedX90Normal = rotateNormalAroundAxis( flippedPoint, 1.57079632679, 'x' );
+          // flagFlippedNormals = true;
+          // Vector3f rotatedX90Normal = rotateNormalAroundAxis( profile[j], 1.57079632679, 'x' );
 
           CurvePoint rotatedX90Normal_CP;
           rotatedX90Normal_CP.N = Vector3f(rotatedX90Normal[0], rotatedX90Normal[1], rotatedX90Normal[2] );
