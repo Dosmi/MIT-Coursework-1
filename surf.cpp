@@ -47,6 +47,19 @@ float getRotation(Vector3f profilePointingVector, Vector3f sweepTangentVector)
 
   float angleBetweenVectors = acos(cosAngle);
 
+  Vector3f cross = Vector3f::cross(profilePointingVector, sweepTangentVector);
+  if (cross[2] < 0) angleBetweenVectors = -angleBetweenVectors;
+
+  // if (angleBetweenVectors > 1.5708) // if the angle is more than 90 degrees,
+  // {
+  //   angleBetweenVectors = angleBetweenVectors + 3.14159;
+  // }
+  //
+  // else if (angleBetweenVectors < -1.5708) // if the angle is more than 90 degrees,
+  // {
+  //   angleBetweenVectors = angleBetweenVectors + 3.14159;
+  // }
+
   return angleBetweenVectors;
 }
 
@@ -172,7 +185,10 @@ Surface makeGenCyl(const Curve &profile, const Curve &sweep )
       for( unsigned i = 0; i < sweep.size(); i++ )
       {
           //float singleRotation = (2*3.14159265359)/(sweep.size()-1);
-          float singleRotation = getRotation(Vector3f(0,0,1), Vector3f(sweep[i].T[0],sweep[i].T[1],sweep[i].T[2]));
+          float singleRotation = getRotation(Vector3f(0,-1,0), Vector3f(sweep[i].T[0],sweep[i].T[1],sweep[i].T[2]));
+          cerr << "single rotation: " << singleRotation << endl;
+          Vector3f(0,1,0).print();
+          Vector3f(sweep[i].T[0],sweep[i].T[1],sweep[i].T[2]).print();
           //float singleRotation = getRotation(Vector3f(sweep[i].T[0],sweep[i].T[1],sweep[i].T[2]), Vector3f(0,1,0));
 
           Matrix4f translationMatrix = Matrix4f
