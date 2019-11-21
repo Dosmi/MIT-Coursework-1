@@ -184,7 +184,7 @@ Surface makeGenCyl(const Curve &profile, const Curve &sweep )
     {
       for( unsigned i = 0; i < sweep.size(); i++ )
       {
-          //float singleRotation = (2*3.14159265359)/(sweep.size()-1);
+          // float singleRotation = (2*3.14159265359)/(sweep.size()-1);
           float singleRotation = getRotation(Vector3f(0,-1,0), Vector3f(sweep[i].T[0],sweep[i].T[1],sweep[i].T[2]));
           cerr << "single rotation: " << singleRotation << endl;
           Vector3f(0,1,0).print();
@@ -224,18 +224,23 @@ Surface makeGenCyl(const Curve &profile, const Curve &sweep )
           surface.VV.push_back(surfacePoint);
 
 
-          Vector3f flippedNormals = flipNormals(profile[j].N);
-          CurvePoint flippedPoint;
-
-          flippedPoint.N = Vector3f(flippedNormals[0], flippedNormals[1], flippedNormals[2] );
-          Vector3f rotatedX90Normal = rotateNormalAroundAxis( flippedPoint, 1.57079632679, 'x' );
+          // -----------------------------------------------------------------------------------------
+          // Vector3f flippedNormals = flipNormals(profile[j].N);
+          // CurvePoint flippedPoint;
+          //
+          // flippedPoint.N = Vector3f(flippedNormals[0], flippedNormals[1], flippedNormals[2] );
+          // Vector3f rotatedX90Normal = rotateNormalAroundAxis( flippedPoint, 1.57079632679, 'x' );
           // flagFlippedNormals = true;
-          // Vector3f rotatedX90Normal = rotateNormalAroundAxis( profile[j], 1.57079632679, 'x' );
+
+          // *****************************************************************************************
+          Vector3f rotatedX90Normal = rotateNormalAroundAxis( profile[j], 1.57079632679, 'x' );
+
+          // -----------------------------------------------------------------------------------------
 
           CurvePoint rotatedX90Normal_CP;
           rotatedX90Normal_CP.N = Vector3f(rotatedX90Normal[0], rotatedX90Normal[1], rotatedX90Normal[2] );
-
-          surface.VN.push_back( rotateNormalAroundAxis( rotatedX90Normal_CP, singleRotation*i, 'z' ) );
+          //
+          surface.VN.push_back( rotateNormalAroundAxis( rotatedX90Normal_CP, singleRotation, 'z' ) );
       }
     }
 
